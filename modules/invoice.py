@@ -1,112 +1,75 @@
-# modules/invoice.py - Imports
+# modules/invoice.py
 import streamlit as st
-import sqlite3
+from fpdf import FPDF
 from datetime import date
-# Assuming calculate_interest is imported in the main app or available globally
-# from interest_utils import calculate_interest
+import sqlite3, os
 
-# modules/invoice.py - get_all_invoices function
-import sqlite3 # Import for clarity
-
-def get_all_invoices():
-    conn = sqlite3.connect("db/hisab.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM invoices")
-    invoices = cursor.fetchall()
-    conn.close()
-    return invoices
-
-# modules/invoice.py - add_invoice function
-import streamlit as st # Import for clarity
-import sqlite3 # Import for clarity
-from datetime import date # Import for clarity
-
-def add_invoice(customer, product, qty, rate, total, invoice_date, due_date):
-    conn = sqlite3.connect("db/hisab.db")
-    cursor = conn.cursor()
-    try:
-        cursor.execute('''
-            INSERT INTO invoices (customer, product, qty, rate, total, invoice_date, due_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (customer, product, qty, rate, total, invoice_date, due_date))
-        conn.commit()
-        st.success("✅ ইনভয়েস সফলভাবে যুক্ত হয়েছে")
-    except Exception as e:
-        st.error(f"Error adding invoice: {e}")
-    conn.close()
-
-# modules/invoice.py - mark_paid function
-import streamlit as st # Import for clarity
-import sqlite3 # Import for clarity
-
-def mark_paid(invoice_id, paid_amount):
-    conn = sqlite3.connect("db/hisab.db")
-    cursor = conn.cursor()
-    try:
-        # Assuming marking paid means setting the 'paid' column to 1
-        # In a real app, you might have a separate payments table
-        cursor.execute("UPDATE invoices SET paid = 1 WHERE id = ?", (invoice_id,))
-        conn.commit()
-        st.success(f"📬 ইনভয়েস #{invoice_id} পরিশোধ হয়েছে")
-    except Exception as e:
-        st.error(f"Error marking invoice paid: {e}")
-    conn.close()
-
-# modules/invoice.py - invoice_ui function
-import streamlit as st # Import for clarity
-from datetime import date # Import for clarity
-# Assuming get_all_invoices, add_invoice, mark_paid, and calculate_interest are available
-# from .invoice import get_all_invoices, add_invoice, mark_paid
-# from interest_utils import calculate_interest
-
+DB_PATH = os.path.join("db", "kolom.db")
 
 def invoice_ui():
-    st.title("🧾 ইনভয়েস")
+    st.subheader("🧾 নতুন ইনভয়েস")
+    cust = st.text_input("👤 কাস্টমার নাম")
+    prod_list = st.session_state.get("products", ["পেন্সিল", "খাতা"])
+    
+    product = st.selectbox("📦 প্রোডাক্ট", prod_list)
+    qty = st.number_input("🔢 পরিমাণ", value=1, step=1)
+    rate = st.number_input("💵 রেট", value=10.0)
 
-    st.subheader("➕ নতুন ইনভয়েস তৈরি করুন")
-    # You would likely need to fetch lists of customers and products here
-    # Example placeholders:
-    customer = st.text_input("কাস্টমার নাম")
-    product = st.text_input("প্রোডাক্ট নাম") # Consider using a selectbox with available products
-    qty = st.number_input("পরিমাণ", min_value=1, value=1)
-    rate = st.number_input("রেট", min_value=0.0, value=0.0)
-    total = qty * rate
-    st.write(f"মোট: {total}৳")
+    if "invoice_items" not in st.session_state:
+        st.session_state.invoice_items = []
 
-    invoice_date = st.date_input("📅 ইনভয়েস তারিখ নির্বাচন করুন", value=date.today())
-    due_date = st.date_input("📅 ডিউ তারিখ নির্বাচন করুন", value=date.today()) # You might want a default based on terms
+    if st.button("➕ লাইন যোগ করো"):
+        total = qty * rate
+        st.session_state.invoice_items.append((product, qty, rate, total))
 
+    if st.session_state.invoice_items:
+        st.table(st.session_state.invoice_items)
+        grand_total = sum([row[3] for row in st.session_state.invoice_items])
+        st.success(f"মোট: {grand_total:.2f}৳")
+        if st.button("💾 ইনভয়েস সংরক্ষণ + PDF"):
+            save_invoice(cust, st.session_state.invoice_items, grand_total)
+            st.session_state.invoice_items = []
 
-    if st.button("✅ ইনভয়েস অ্যাড করো"):
-        add_invoice(customer, product, qty, rate, total, invoice_date.isoformat(), due_date.isoformat())
+def save_invoice(cust, items, total):
+    date_str = str(date.today())
 
-    st.subheader("📋 ইনভয়েস তালিকা")
-    invoices = get_all_invoices()
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("CREATE TABLE IF NOT EXISTS invoices (id INTEGER PRIMARY KEY, customer TEXT, date TEXT, total REAL)")
+    cur.execute("INSERT INTO invoices (customer, date, total) VALUES (?, ?, ?)", (cust, date_str, total))
+    inv_id = cur.lastrowid
 
-    if invoices:
-        # Assuming invoice structure is (id, customer, product, qty, rate, total, invoice_date, due_date, paid)
-        for inv in invoices:
-            inv_id, customer, product, qty, rate, total, invoice_date_str, due_date_str, paid = inv
-            due_date = date.fromisoformat(due_date_str)
-            invoice_date = date.fromisoformat(invoice_date_str)
+    cur.execute("""CREATE TABLE IF NOT EXISTS invoice_items (
+        invoice_id INTEGER, product TEXT, qty INTEGER, rate REAL, total REAL
+    )""")
+    for row in items:
+        cur.execute("INSERT INTO invoice_items VALUES (?, ?, ?, ?, ?)", (inv_id, *row))
+    conn.commit()
+    conn.close()
 
-            interest = calculate_interest(due_date, total) # Assuming calculate_interest is available
-            grand_total = total + interest
+    generate_pdf(cust, items, total, date_str, inv_id)
 
-            st.write(f"---")
-            st.write(f"ইনভয়েস আইডি: #{inv_id}")
-            st.write(f"কাস্টমার: {customer}")
-            st.write(f"প্রোডাক্ট: {product} (পরিমাণ: {qty}, রেট: {rate}৳)")
-            st.write(f"ইনভয়েস তারিখ: {invoice_date}")
-            st.write(f"ডিউ তারিখ: {due_date}")
-            st.write(f"মূল টাকা: {total}৳")
-            st.write(f"সুদ: {interest}৳")
-            st.write(f"মোট টাকা: {grand_total}৳")
-            st.write(f"পরিশোধিত: {'হ্যাঁ' if paid else 'না'}")
+def generate_pdf(customer, items, total, date_str, invoice_id):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(190, 10, "✒️ কলম ছাড়া হিসাব", ln=True, align='C')
+    pdf.cell(190, 10, f"ইনভয়েস #{invoice_id} | তারিখ: {date_str}", ln=True)
+    pdf.cell(190, 10, f"কাস্টমার: {customer}", ln=True)
+    pdf.ln(5)
 
-            if paid == 0 and st.button(f"✅ বকেয়া পরিশোধ #{inv_id}"):
-                 mark_paid(inv_id, grand_total) # In a real app, you'd handle the actual payment amount
-                 st.experimental_rerun() # Rerun to update the list after payment
+    pdf.cell(60, 8, "প্রোডাক্ট", 1)
+    pdf.cell(30, 8, "পরিমাণ", 1)
+    pdf.cell(40, 8, "রেট", 1)
+    pdf.cell(40, 8, "মোট", 1, ln=True)
 
-    else:
-        st.write("কোন ইনভয়েস পাওয়া যায়নি।")
+    for p, q, r, t in items:
+        pdf.cell(60, 8, p, 1)
+        pdf.cell(30, 8, str(q), 1)
+        pdf.cell(40, 8, f"{r:.2f}", 1)
+        pdf.cell(40, 8, f"{t:.2f}", 1, ln=True)
+
+    pdf.ln(5)
+    pdf.cell(190, 10, f"মোট: {total:.2f}৳", ln=True)
+    filename = f"invoice_{invoice_id}.pdf"
+    pdf.output(filename)

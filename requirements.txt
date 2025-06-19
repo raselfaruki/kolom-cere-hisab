@@ -1,4 +1,3 @@
-# requirements.txt
-# Add any necessary libraries here.
 streamlit
-pandas
+fpdf
+matplotlib
