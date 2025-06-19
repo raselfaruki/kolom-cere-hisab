@@ -1,10 +1,11 @@
 # app_streamlit.py
 import streamlit as st
+from modules.interest_utils import calculate_interest
 from modules.invoice import invoice_ui
 from modules.products import product_ui
 from modules.customers import customer_ui
 from modules.reports import reports_ui
-from modules.interest_utils import calculate_interest
+
 
 
 # whatsapp.py - Imports
