@@ -65,6 +65,8 @@ invoice_list = [
     {"customer": "জন", "due_date": date.today(), "total": 1000, "paid": 0},
     {"customer": "সাবিনা", "due_date": date.today(), "total": 800, "paid": 1}
 ]
+
+
 for inv in invoice_list:
     due = inv["due_date"]
     total = inv["total"]
@@ -74,6 +76,7 @@ for inv in invoice_list:
         interest = calculate_interest(due, total)
         total_with_interest = total + interest
         st.write(f"🧾 {inv['customer']} ➤ মূল: {total}৳ | সুদ: {interest}৳ | মোট: {total_with_interest}৳ | ডিউ: {due}")
+
 
 st.title("✒️ কলম ছাড়া হিসাব")
 
