@@ -1,12 +1,22 @@
+# interest_utils.py - Imports
 from datetime import date
 
-def calculate_interest(due_date, total, daily_rate=0.01):
+# interest_utils.py - calculate_interest function
+from datetime import date # Import for clarity
+
+def calculate_interest(due_date, total_amount):
     """
-    Simple interest calculation based on due date and total.
-    - daily_rate is default 1% per day
+    Calculates simple interest for overdue payments.
+    Assuming a simple daily interest rate for demonstration.
+    You might need to adjust the interest rate and calculation logic
+    based on your specific requirements.
     """
     today = date.today()
-    days_overdue = (today - due_date).days
-    if days_overdue > 0:
-        return round(total * daily_rate * days_overdue, 2)
-    return 0
+    if today > due_date:
+        days_overdue = (today - due_date).days
+        # Example: 0.1% daily interest rate
+        daily_interest_rate = 0.001
+        interest = total_amount * daily_interest_rate * days_overdue
+        return round(interest, 2) # Round to 2 decimal places
+    else:
+        return 0
