@@ -59,10 +59,10 @@ def dashboard():
 from interest_utils import calculate_interest
 
 # প্রতিটি ইনভয়েসের জন্য
-for inv in invoice_list:
-    due = inv["due_date"]
-    total = inv["total"]
-    paid = inv["paid"]
+for inv in invoice_list = [
+    {"customer": "জন", "due_date": date.today(), "total": 1000, "paid": 0},
+    {"customer": "সাবিনা", "due_date": date.today(), "total": 800, "paid": 1}
+]
 
 
     if paid == 0:
@@ -70,7 +70,7 @@ for inv in invoice_list:
         total_with_interest = total + interest
         st.write(f"🧾 {inv['customer']} ➤ মূল: {total}৳ | সুদ: {interest}৳ | মোট: {total_with_interest}৳ | ডিউ: {due}")
 
-invoice_list = get_invoices_from_db()  # Example placeholder
+
 
 
 
