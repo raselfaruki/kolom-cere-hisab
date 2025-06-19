@@ -59,11 +59,12 @@ def dashboard():
 from interest_utils import calculate_interest
 
 # প্রতিটি ইনভয়েসের জন্য
+from datetime import date
+
 invoice_list = [
     {"customer": "জন", "due_date": date.today(), "total": 1000, "paid": 0},
     {"customer": "সাবিনা", "due_date": date.today(), "total": 800, "paid": 1}
 ]
-
 for inv in invoice_list:
     due = inv["due_date"]
     total = inv["total"]
