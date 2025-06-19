@@ -5,7 +5,7 @@ from modules.products import product_ui
 from modules.customers import customer_ui
 from modules.reports import reports_ui
 from modules.auth import validate_user, validate_license_key
-from interest_utils import calculate_interest
+
 from datetime import date, timedelta
 
 # app_streamlit.py - Streamlit Page Configuration
