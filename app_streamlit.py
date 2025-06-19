@@ -75,7 +75,7 @@ for inv in invoice_list:
     if paid == 0:
         interest = calculate_interest(due, total)
         total_with_interest = total + interest
-        st.write(f"🧾 {inv['customer']} ➤ মূল: {total}৳ | সুদ: {interest}৳ | মোট: {total_with_interest}৳ | ডিউ: {due}")
+        st.write(f"🧾 {inv['customer']} ➤ মূল: {total}৳  সুদ: {interest}৳  মোট: {total_with_interest}৳  ডিউ: {due}")
 
 
 st.title("✒️ কলম ছাড়া হিসাব")
