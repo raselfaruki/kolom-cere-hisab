@@ -64,10 +64,13 @@ for inv in invoice_list:
     total = inv["total"]
     paid = inv["paid"]
 
+
     if paid == 0:
         interest = calculate_interest(due, total)
         total_with_interest = total + interest
         st.write(f"🧾 {inv['customer']} ➤ মূল: {total}৳ | সুদ: {interest}৳ | মোট: {total_with_interest}৳ | ডিউ: {due}")
+
+invoice_list = get_invoices_from_db()  # Example placeholder
 
 
 
